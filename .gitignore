@@ -20,3 +20,4 @@ yarn-error.*
 .env.test.local
 .env.production.local
 expo-env.d.ts
+.claude/settings.local.json
