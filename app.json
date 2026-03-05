@@ -25,7 +25,13 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Luminary — AI Study App",
+      "shortName": "Luminary",
+      "description": "AI-powered study app. Take notes, generate flashcards, and chat with your AI tutor.",
+      "backgroundColor": "#0A0A14",
+      "themeColor": "#7C3AED",
+      "lang": "en"
     },
     "plugins": [
       "expo-router",
