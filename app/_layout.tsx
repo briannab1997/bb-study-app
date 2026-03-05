@@ -1,9 +1,14 @@
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../global.css";
+
+// Animations are native-only — react-native-screens uses Reanimated 4 easing on web
+const anim = (type: string) =>
+  Platform.OS === "web" ? {} : { animation: type };
 
 export default function RootLayout() {
   return (
@@ -11,31 +16,31 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" backgroundColor="transparent" translucent />
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" options={{ animation: "fade" }} />
-          <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(auth)" options={anim("fade")} />
+          <Stack.Screen name="(tabs)" options={anim("fade")} />
           <Stack.Screen
             name="notebook/[id]"
-            options={{ animation: "slide_from_right" }}
+            options={anim("slide_from_right")}
           />
           <Stack.Screen
             name="notebook/new"
-            options={{ animation: "slide_from_bottom", presentation: "modal" }}
+            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "modal" }}
           />
           <Stack.Screen
             name="flashcards/[setId]"
-            options={{ animation: "slide_from_right" }}
+            options={anim("slide_from_right")}
           />
           <Stack.Screen
             name="flashcards/study/[setId]"
-            options={{ animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
           />
           <Stack.Screen
             name="quiz/[setId]"
-            options={{ animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
           />
           <Stack.Screen
             name="flashcards/match/[setId]"
-            options={{ animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
           />
         </Stack>
       </SafeAreaProvider>
