@@ -1,251 +1,139 @@
-# ✨ Luminary — AI-Powered Study App
+# Luminary
 
-> **Illuminate your potential.** A FAANG-level study application combining the best of NotebookLM, Quizlet, and Knowt.
-
-![Expo](https://img.shields.io/badge/Expo-SDK%2055-black?logo=expo)
-![React Native](https://img.shields.io/badge/React%20Native-0.79-61DAFB?logo=react)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)
-![Supabase](https://img.shields.io/badge/Supabase-latest-3ECF8E?logo=supabase)
-![Claude AI](https://img.shields.io/badge/Claude-Sonnet%204.6-FF6B35?logo=anthropic)
+A study app I built as a portfolio project. The idea came from bouncing between NotebookLM, Quizlet, and Knowt depending on what I needed — I wanted one app that did all of it. You can drop in notes or a PDF, get flashcards generated automatically, quiz yourself, and ask the AI questions about your own material. It runs on iOS and Android from one codebase.
 
 ---
 
-## 🌟 Features
+## What it does
 
-### 📝 Smart Notes
-- Rich text notes editor with auto-save
-- AI-powered **note summarization** using Claude
-- PDF/document import ready
-- Word count tracking
+**Notes & AI Summarization**
+Write notes directly in the app or import a PDF. Hit "Summarize" and you get a clean bullet-point breakdown saved right on the note. Nothing fancy — it just works.
 
-### ⚡ AI Flashcard Generation
-- Auto-generate flashcards from notes with **Claude Sonnet 4.6**
-- Multiple difficulty levels (Easy, Medium, Hard)
-- Hints auto-generated for each card
-- Manual card creation and editing
+**Flashcard Generation**
+Select a note, tap "Make Cards" and Claude generates up to 15 flashcards with difficulty levels and hints. You can also add cards manually if you prefer.
 
-### 🃏 Interactive Study Modes
-- **Flashcard Mode** — Tap to flip, swipe to rate
-- **Spaced Repetition** — SM-2 algorithm (same as Anki)
-- **Rating System** — Again / Hard / Good / Easy
-- Swipe left (wrong) / swipe right (correct) gestures
+**Study Modes**
+- **Flashcards** — tap to flip, swipe left if you missed it, swipe right if you got it
+- **Learn** — spaced repetition using the SM-2 algorithm (same one Anki uses). Cards you miss come back sooner, cards you nail get pushed out further
+- **Test** — AI-generated multiple choice questions from your flashcard set
+- **Match** — tap pairs to match terms with definitions against a timer
 
-### 💬 AI Tutor Chat
-- Chat with your notes using **NotebookLM-style** AI
-- Full notebook context awareness
-- Persistent chat history per notebook
-- Powered by Claude with notebook context injection
+**AI Chat**
+Ask questions about your notes and get answers grounded in what you actually wrote. It's not just a generic chatbot — it has context of your entire notebook.
 
-### 📊 Progress Analytics
-- Daily study streaks
-- Accuracy tracking per session
-- Total cards studied & study time
-- Weekly activity visualization
-- Achievement system (6 achievements)
-
-### 🎨 Premium Design
-- Dark theme with violet/gold brand palette
-- Smooth Reanimated 3 animations
-- Haptic feedback throughout
-- Card flip animations with 3D perspective
-- Gradient backgrounds and glass morphism
+**Progress Tracking**
+Streaks, accuracy per session, total cards studied, weekly activity view, and a small achievement system to keep things motivating.
 
 ---
 
-## 🏗 Tech Stack
+## Tech stack
 
-| Layer | Technology |
+| | |
 |---|---|
-| **Mobile** | Expo SDK 55 + React Native 0.79 |
-| **Navigation** | Expo Router v5 (file-based) |
-| **Language** | TypeScript (strict mode) |
-| **Styling** | NativeWind v4 + StyleSheet |
-| **Animations** | React Native Reanimated 3 |
-| **Gestures** | React Native Gesture Handler |
-| **State** | Zustand v5 |
-| **Auth** | Supabase Auth |
-| **Database** | Supabase (PostgreSQL) with RLS |
-| **AI** | Anthropic Claude Sonnet 4.6 |
-| **Icons** | @expo/vector-icons (Ionicons) |
-| **Dates** | date-fns |
+| Framework | Expo SDK 55 + React Native 0.79 |
+| Navigation | Expo Router v5 (file-based) |
+| Language | TypeScript throughout |
+| Backend | Supabase (auth, Postgres, RLS) |
+| AI | Anthropic Claude Sonnet 4.6 |
+| State | Zustand v5 |
+| Animations | React Native Reanimated 3 |
+| Gestures | React Native Gesture Handler |
+| Styling | NativeWind v4 + custom StyleSheet |
 
 ---
 
-## 🚀 Setup
+## Getting started
 
-### Prerequisites
+You'll need:
 - Node.js 20+
-- Expo CLI (`npm install -g expo-cli`)
-- iOS Simulator or Android Emulator (or Expo Go app)
-- [Supabase](https://supabase.com) account
-- [Anthropic](https://console.anthropic.com) API key
-
-### 1. Clone & Install
+- A [Supabase](https://supabase.com) project
+- An [Anthropic API key](https://console.anthropic.com)
+- Expo Go on your phone, or iOS Simulator / Android Emulator
 
 ```bash
-git clone https://github.com/yourusername/luminary
-cd luminary
+git clone https://github.com/briannab1997/bb-study-app
+cd bb-study-app
 npm install
-```
-
-### 2. Environment Variables
-
-```bash
 cp .env.example .env
 ```
 
-Fill in your `.env`:
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-EXPO_PUBLIC_ANTHROPIC_API_KEY=sk-ant-...
-```
-
-### 3. Database Setup
-
-1. Create a new Supabase project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** and run the contents of `supabase/schema.sql`
-3. Enable **Email Auth** in Authentication → Providers
-
-### 4. Run the App
+Fill in `.env` with your keys, then run the database schema:
 
 ```bash
-# Start development server
-npm start
+# In your Supabase project → SQL Editor, run the contents of:
+supabase/schema.sql
+```
 
-# iOS Simulator
-npm run ios
+Then enable Email Auth under **Authentication → Providers** in Supabase.
 
-# Android Emulator
-npm run android
-
-# Web (PWA)
-npm run web
+```bash
+npm run ios        # or npm run android
 ```
 
 ---
 
-## 📁 Project Structure
+## Project layout
 
 ```
-luminary/
-├── app/                          # Expo Router screens
-│   ├── _layout.tsx               # Root layout
-│   ├── index.tsx                 # Auth redirect
-│   ├── (auth)/                   # Auth flow
-│   │   ├── welcome.tsx           # Onboarding
-│   │   ├── login.tsx             # Sign in
-│   │   └── register.tsx          # Sign up
-│   ├── (tabs)/                   # Main app tabs
-│   │   ├── home.tsx              # Dashboard
-│   │   ├── library.tsx           # Notebooks list
-│   │   ├── study.tsx             # Study hub
-│   │   └── profile.tsx           # Progress + settings
-│   ├── notebook/
-│   │   ├── [id].tsx              # Notebook detail (notes/flashcards/chat)
-│   │   └── new.tsx               # Create notebook
-│   └── flashcards/
-│       ├── [setId].tsx           # Flashcard set view
-│       └── study/[setId].tsx     # Study session
+bb-study-app/
+├── app/
+│   ├── (auth)/         # welcome, login, register
+│   ├── (tabs)/         # home, library, study hub, profile
+│   ├── notebook/       # notebook detail + new notebook
+│   ├── flashcards/     # set view + study session
+│   └── quiz/           # test mode
 ├── components/
-│   ├── ui/                       # Design system primitives
-│   ├── notebook/                 # Notebook components
-│   ├── flashcard/                # Flashcard components
-│   ├── chat/                     # Chat UI
-│   └── common/                   # Shared components
+│   ├── ui/             # Button, Input, Card, Badge, ProgressBar
+│   ├── notebook/       # NotebookCard
+│   ├── flashcard/      # FlashCard (flip animation), FlashCardSetCard
+│   └── common/         # EmptyState, LoadingSpinner, GradientBackground
 ├── lib/
-│   ├── supabase.ts               # Supabase client + DB helpers
-│   ├── claude.ts                 # Claude AI integration
-│   └── spaced-repetition.ts     # SM-2 algorithm
-├── store/
-│   ├── auth.ts                   # Auth state (Zustand)
-│   └── notebooks.ts              # Notebooks state
-├── types/index.ts                # TypeScript types + DB schema
-├── constants/
-│   ├── colors.ts                 # Design tokens
-│   └── config.ts                 # App configuration
-└── supabase/schema.sql           # Database schema + RLS policies
+│   ├── claude.ts       # all AI calls (flashcards, chat, summary, quiz, PDF)
+│   ├── supabase.ts     # client + database helpers
+│   └── spaced-repetition.ts  # SM-2 algorithm
+├── store/              # Zustand stores (auth, notebooks)
+├── types/              # TypeScript types + DB schema types
+├── constants/          # colors, config
+└── supabase/
+    └── schema.sql      # full schema with RLS policies + triggers
 ```
 
 ---
 
-## 🧠 AI Architecture
+## How the AI pieces work
 
-### Flashcard Generation
-- Sends note content + title to Claude Sonnet 4.6
-- Generates 15 flashcards with front, back, hint, difficulty
-- JSON structured output with validation
-- Automatic set creation in Supabase
+**Flashcard generation** — sends the note content to Claude with a structured JSON prompt. Gets back an array of cards with front, back, hint, and difficulty. The whole thing takes a few seconds.
 
-### AI Tutor Chat
-- System prompt includes all notebook notes as context
-- Maintains conversation history (last 10 messages)
-- Grounded responses reference specific note content
-- Persisted to Supabase for cross-session continuity
+**PDF import** — picks the file via `expo-document-picker`, reads it as base64 with `expo-file-system`, then sends it directly to Claude as a document. Claude pulls out the text and suggests a title. The result saves as a regular note.
 
-### Note Summarization
-- Generates concise bullet-point summaries
-- Stored in `ai_summary` field on notes table
-- Displayed inline on note cards
+**AI chat** — builds a system prompt that includes all your notebook notes as context, then passes the conversation history. Answers are grounded in what you wrote, not generic knowledge.
+
+**Spaced repetition** — standard SM-2. Ease factor starts at 2.5 and adjusts based on your rating (Again / Hard / Good / Easy). Cards you struggle with surface more often, cards you know well get pushed weeks or months out.
 
 ---
 
-## 📚 Spaced Repetition (SM-2)
+## Database
 
-Based on the SuperMemo 2 algorithm — the same system used by Anki.
-
-| Rating | Meaning | Effect |
-|---|---|---|
-| **Again (0)** | Complete blackout | Reset to 1 day |
-| **Hard (2)** | Incorrect but recalled | Short interval |
-| **Good (4)** | Correct with hesitation | Normal interval |
-| **Easy (5)** | Perfect recall | Long interval |
-
-The ease factor starts at 2.5 and adjusts based on performance, creating personalized review schedules.
+Eight tables in Postgres with row-level security on all of them. A few highlights:
+- Triggers automatically update `card_count` on flashcard sets when cards are added/deleted
+- Another trigger increments `total_cards_studied` and `total_study_time` on the user profile after each session
+- `study_progress` stores the SM-2 state per user per card, with a unique constraint on `(user_id, flashcard_id)`
 
 ---
 
-## 🔒 Security
+## What's next
 
-- **Row Level Security (RLS)** on all Supabase tables
-- Users can only access their own data
-- API keys stored in environment variables
-- Supabase anon key is safe for client-side use
-
----
-
-## 📱 Supported Platforms
-
-| Platform | Status |
-|---|---|
-| iOS | ✅ Full support |
-| Android | ✅ Full support |
-| Web (PWA) | ✅ Experimental |
+Things I want to add when I have time:
+- Push notifications for daily study reminders
+- Import from Quizlet / Anki
+- Collaborative notebooks
+- Offline support with local caching
+- Apple / Google sign-in
 
 ---
 
-## 🛣 Roadmap
+## Notes
 
-- [ ] PDF upload and text extraction
-- [ ] Match game study mode
-- [ ] Audio overview (TTS summaries)
-- [ ] Collaborative notebooks
-- [ ] Push notification study reminders
-- [ ] Import from Quizlet/Anki
-- [ ] Offline support
-- [ ] Apple/Google sign-in
-
----
-
-## 👩‍💻 Built By
-
-Built with ❤️ as a portfolio project showcasing:
-- AI integration (Claude API)
-- Mobile development (React Native + Expo)
-- Backend architecture (Supabase + PostgreSQL)
-- Complex algorithms (Spaced Repetition SM-2)
-- Premium UI/UX design
-
----
-
-*Luminary — Illuminate your potential.*
+- The placeholder assets in `assets/images/` need to be replaced with real icons before submitting to the App Store
+- The Anthropic API key is called client-side (fine for a portfolio project, move it behind a serverless function before going to production)
+- Match game currently supports up to 6 pairs per round to keep the grid readable on smaller phones

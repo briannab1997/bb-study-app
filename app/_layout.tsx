@@ -33,6 +33,10 @@ export default function RootLayout() {
             name="quiz/[setId]"
             options={{ animation: "slide_from_bottom", presentation: "fullScreenModal" }}
           />
+          <Stack.Screen
+            name="flashcards/match/[setId]"
+            options={{ animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

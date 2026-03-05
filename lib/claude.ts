@@ -221,3 +221,64 @@ ${noteContent.slice(0, 10000)}`;
 
   return JSON.parse(jsonMatch[0]) as string[];
 }
+
+// ─── PDF Import ────────────────────────────────────────────────────────────────
+export interface ImportedPDFNote {
+  title: string;
+  content: string;
+}
+
+export async function importPDFNote(
+  base64Data: string,
+  filename: string
+): Promise<ImportedPDFNote> {
+  const message = await anthropic.messages.create({
+    model: Config.ai.model,
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {
+            type: "document",
+            source: {
+              type: "base64",
+              media_type: "application/pdf",
+              data: base64Data,
+            },
+          } as any,
+          {
+            type: "text",
+            text: `Extract all the text content from this PDF document. Then suggest a concise, descriptive title based on what the document covers.
+
+Respond with ONLY valid JSON in this exact format:
+{
+  "title": "A clear title for this document",
+  "content": "The full extracted text content goes here"
+}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  const responseContent = message.content[0];
+  if (responseContent.type !== "text") {
+    throw new Error("Unexpected response type from Claude");
+  }
+
+  const jsonMatch = responseContent.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("No JSON found in Claude response");
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]) as ImportedPDFNote;
+
+  // Fall back to the filename if Claude didn't suggest a title
+  if (!parsed.title?.trim()) {
+    parsed.title = filename.replace(/\.pdf$/i, "").replace(/[-_]/g, " ");
+  }
+
+  return parsed;
+}

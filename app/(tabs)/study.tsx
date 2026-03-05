@@ -5,16 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth";
 import { useNotebooksStore } from "@/store/notebooks";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { db } from "@/lib/supabase";
+import type { FlashcardSet } from "@/types";
 
 const STUDY_MODES = [
   {
@@ -58,15 +59,54 @@ const STUDY_MODES = [
 export default function StudyScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { notebooks, flashcardSets, fetchNotebooks, fetchFlashcardSets } =
-    useNotebooksStore();
+  const { notebooks, fetchNotebooks } = useNotebooksStore();
 
   const [selectedMode, setSelectedMode] = useState("flashcard");
-  const [dueCount] = useState(0); // TODO: fetch from spaced rep
+  const [expandedNotebook, setExpandedNotebook] = useState<string | null>(null);
+  const [notebookSetsMap, setNotebookSetsMap] = useState<Record<string, FlashcardSet[]>>({});
+  const [loadingSetId, setLoadingSetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchNotebooks(user.id);
   }, [user]);
+
+  const handleNotebookPress = async (notebookId: string) => {
+    // Collapse if already open
+    if (expandedNotebook === notebookId) {
+      setExpandedNotebook(null);
+      return;
+    }
+
+    setExpandedNotebook(notebookId);
+
+    // Fetch sets for this notebook if we haven't already
+    if (!notebookSetsMap[notebookId]) {
+      setLoadingSetId(notebookId);
+      const { data } = await db.flashcardSets.list(notebookId);
+      setNotebookSetsMap((prev) => ({
+        ...prev,
+        [notebookId]: (data as unknown as FlashcardSet[]) || [],
+      }));
+      setLoadingSetId(null);
+    }
+  };
+
+  const handleSetPress = (setId: string) => {
+    switch (selectedMode) {
+      case "flashcard":
+      case "learn":
+        router.push(`/flashcards/study/${setId}`);
+        break;
+      case "test":
+        router.push(`/quiz/${setId}`);
+        break;
+      case "match":
+        router.push(`/flashcards/match/${setId}`);
+        break;
+    }
+  };
+
+  const selectedModeData = STUDY_MODES.find((m) => m.id === selectedMode);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -80,30 +120,6 @@ export default function StudyScreen() {
           <Badge label="Beta" variant="brand" />
         </View>
 
-        {/* Due Cards Banner */}
-        {dueCount > 0 && (
-          <LinearGradient
-            colors={["#1C1040", "#0F0F28"]}
-            style={styles.dueBanner}
-          >
-            <View style={styles.dueLeft}>
-              <Text style={styles.dueEmoji}>⚡</Text>
-              <View>
-                <Text style={styles.dueTitle}>{dueCount} cards due today</Text>
-                <Text style={styles.dueSubtitle}>
-                  Keep your streak alive!
-                </Text>
-              </View>
-            </View>
-            <Button
-              label="Review"
-              onPress={() => {}}
-              variant="primary"
-              size="sm"
-            />
-          </LinearGradient>
-        )}
-
         {/* Study Mode Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose Study Mode</Text>
@@ -116,13 +132,21 @@ export default function StudyScreen() {
                 style={[
                   styles.modeCard,
                   selectedMode === mode.id && styles.modeCardSelected,
-                  { borderColor: selectedMode === mode.id ? mode.color : Colors.border.primary },
+                  {
+                    borderColor:
+                      selectedMode === mode.id
+                        ? mode.color
+                        : Colors.border.primary,
+                  },
                 ]}
               >
                 <View
                   style={[
                     styles.modeIcon,
-                    { backgroundColor: mode.bgColor, borderColor: mode.borderColor },
+                    {
+                      backgroundColor: mode.bgColor,
+                      borderColor: mode.borderColor,
+                    },
                   ]}
                 >
                   <Text style={styles.modeEmoji}>{mode.emoji}</Text>
@@ -144,11 +168,23 @@ export default function StudyScreen() {
           </View>
         </View>
 
-        {/* Pick a Notebook */}
+        {/* Notebook + Set Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Pick a Notebook to Study
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Pick a Set</Text>
+            {selectedModeData && (
+              <View style={styles.modePill}>
+                <Text style={styles.modePillEmoji}>{selectedModeData.emoji}</Text>
+                <Text style={[styles.modePillText, { color: selectedModeData.color }]}>
+                  {selectedModeData.name}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.sectionHint}>
+            Tap a notebook to see its flashcard sets
           </Text>
+
           {notebooks.length === 0 ? (
             <TouchableOpacity
               style={styles.emptyNotebooks}
@@ -163,34 +199,119 @@ export default function StudyScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.notebookList}>
-              {notebooks.map((nb) => (
-                <TouchableOpacity
-                  key={nb.id}
-                  style={styles.notebookItem}
-                  onPress={() => router.push(`/notebook/${nb.id}`)}
-                  activeOpacity={0.85}
-                >
-                  <View
-                    style={[
-                      styles.notebookEmoji,
-                      { backgroundColor: `${Colors.notebook[nb.color as keyof typeof Colors.notebook]}20` },
-                    ]}
-                  >
-                    <Text style={{ fontSize: 20 }}>{nb.emoji}</Text>
+              {notebooks.map((nb) => {
+                const isExpanded = expandedNotebook === nb.id;
+                const sets = notebookSetsMap[nb.id];
+                const isLoadingSets = loadingSetId === nb.id;
+
+                return (
+                  <View key={nb.id} style={styles.notebookGroup}>
+                    {/* Notebook header row */}
+                    <TouchableOpacity
+                      style={[
+                        styles.notebookItem,
+                        isExpanded && styles.notebookItemExpanded,
+                      ]}
+                      onPress={() => handleNotebookPress(nb.id)}
+                      activeOpacity={0.85}
+                    >
+                      <View
+                        style={[
+                          styles.notebookEmoji,
+                          {
+                            backgroundColor: `${
+                              Colors.notebook[
+                                nb.color as keyof typeof Colors.notebook
+                              ]
+                            }20`,
+                          },
+                        ]}
+                      >
+                        <Text style={{ fontSize: 20 }}>{nb.emoji}</Text>
+                      </View>
+                      <View style={styles.notebookInfo}>
+                        <Text style={styles.notebookTitle}>{nb.title}</Text>
+                        <Text style={styles.notebookMeta}>
+                          {nb.flashcard_count ?? 0} cards
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isExpanded ? "chevron-up" : "chevron-down"}
+                        size={16}
+                        color={Colors.text.tertiary}
+                      />
+                    </TouchableOpacity>
+
+                    {/* Expanded flashcard sets */}
+                    {isExpanded && (
+                      <View style={styles.setsContainer}>
+                        {isLoadingSets ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={Colors.brand[400]}
+                            style={{ paddingVertical: 20 }}
+                          />
+                        ) : !sets || sets.length === 0 ? (
+                          <View style={styles.noSetsMsg}>
+                            <Text style={styles.noSetsMsgText}>
+                              No flashcard sets yet — open the notebook and
+                              generate some from your notes
+                            </Text>
+                            <TouchableOpacity
+                              style={styles.goToNotebookBtn}
+                              onPress={() => router.push(`/notebook/${nb.id}`)}
+                            >
+                              <Text style={styles.goToNotebookText}>
+                                Open Notebook →
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          sets.map((set, index) => (
+                            <TouchableOpacity
+                              key={set.id}
+                              style={[
+                                styles.setItem,
+                                index === 0 && { borderTopWidth: 0 },
+                              ]}
+                              onPress={() => handleSetPress(set.id)}
+                              activeOpacity={0.85}
+                            >
+                              <View style={styles.setModeIcon}>
+                                <Text style={{ fontSize: 16 }}>
+                                  {selectedMode === "flashcard"
+                                    ? "🃏"
+                                    : selectedMode === "learn"
+                                    ? "🧠"
+                                    : selectedMode === "test"
+                                    ? "📝"
+                                    : "🎯"}
+                                </Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.setTitle} numberOfLines={1}>
+                                  {set.title}
+                                </Text>
+                                <Text style={styles.setMeta}>
+                                  {set.card_count} cards
+                                </Text>
+                              </View>
+                              <View style={styles.setStartBtn}>
+                                <Text style={styles.setStartText}>Start</Text>
+                                <Ionicons
+                                  name="arrow-forward"
+                                  size={12}
+                                  color={Colors.brand[400]}
+                                />
+                              </View>
+                            </TouchableOpacity>
+                          ))
+                        )}
+                      </View>
+                    )}
                   </View>
-                  <View style={styles.notebookInfo}>
-                    <Text style={styles.notebookTitle}>{nb.title}</Text>
-                    <Text style={styles.notebookMeta}>
-                      {nb.flashcard_count ?? 0} cards
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={16}
-                    color={Colors.text.tertiary}
-                  />
-                </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -255,44 +376,43 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     letterSpacing: -0.5,
   },
-  dueBanner: {
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.2)",
-  },
-  dueLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  dueEmoji: {
-    fontSize: 28,
-  },
-  dueTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.text.primary,
-  },
-  dueSubtitle: {
-    fontSize: 12,
-    color: Colors.text.secondary,
-    marginTop: 2,
-  },
   section: {
     marginBottom: 28,
     gap: 14,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: Colors.text.primary,
     letterSpacing: -0.3,
+  },
+  sectionHint: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    marginTop: -8,
+  },
+  modePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.surface.secondary,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+  },
+  modePillEmoji: {
+    fontSize: 12,
+  },
+  modePillText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   modeGrid: {
     flexDirection: "row",
@@ -356,7 +476,11 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
   },
   notebookList: {
-    gap: 10,
+    gap: 8,
+  },
+  notebookGroup: {
+    borderRadius: 12,
+    overflow: "hidden",
   },
   notebookItem: {
     flexDirection: "row",
@@ -367,6 +491,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border.primary,
     gap: 12,
+  },
+  notebookItemExpanded: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   notebookEmoji: {
     width: 40,
@@ -387,6 +515,75 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.tertiary,
     marginTop: 2,
+  },
+  setsContainer: {
+    backgroundColor: Colors.surface.secondary,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: Colors.border.primary,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  noSetsMsg: {
+    padding: 20,
+    alignItems: "center",
+    gap: 12,
+  },
+  noSetsMsgText: {
+    fontSize: 13,
+    color: Colors.text.tertiary,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  goToNotebookBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "rgba(124, 58, 237, 0.1)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(124, 58, 237, 0.2)",
+  },
+  goToNotebookText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.brand[400],
+  },
+  setItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.secondary,
+  },
+  setModeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "rgba(124, 58, 237, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  setTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text.primary,
+  },
+  setMeta: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    marginTop: 2,
+  },
+  setStartBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  setStartText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.brand[400],
   },
   tipsSection: {
     gap: 14,

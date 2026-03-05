@@ -11,6 +11,8 @@ import {
   Platform,
   FlatList,
 } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,6 +29,7 @@ import {
   generateFlashcardsFromNote,
   summarizeNote,
   chatWithNotes,
+  importPDFNote,
 } from "@/lib/claude";
 import { db } from "@/lib/supabase";
 import type { ChatMessage, Note } from "@/types";
@@ -68,6 +71,7 @@ export default function NotebookScreen() {
   const [noteContent, setNoteContent] = useState("");
   const [isGeneratingFlashcards, setIsGeneratingFlashcards] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isPDFImporting, setIsPDFImporting] = useState(false);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -202,6 +206,56 @@ export default function NotebookScreen() {
       Alert.alert("Error", "Failed to summarize. Check your API key.");
     } finally {
       setIsSummarizing(false);
+    }
+  };
+
+  // ─── PDF Import ──────────────────────────────────────────────────────────────
+  const handleImportPDF = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const file = result.assets[0];
+      setIsPDFImporting(true);
+
+      // Read the file as base64
+      const base64 = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Send to Claude — it extracts text and suggests a title
+      const { title, content } = await importPDFNote(
+        base64,
+        file.name || "document.pdf"
+      );
+
+      const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+
+      await createNote({
+        notebook_id: id,
+        title,
+        content,
+        ai_summary: null,
+        source_type: "pdf",
+        source_url: null,
+        word_count: wordCount,
+      });
+
+      Alert.alert(
+        "PDF Imported ✓",
+        `"${title}" has been added to your notes.`
+      );
+    } catch (err) {
+      Alert.alert(
+        "Import failed",
+        "Couldn't import the PDF. Make sure your API key is set and try again."
+      );
+    } finally {
+      setIsPDFImporting(false);
     }
   };
 
@@ -394,6 +448,8 @@ export default function NotebookScreen() {
           onAddNote={handleCreateNote}
           isGeneratingFlashcards={isGeneratingFlashcards}
           isSummarizing={isSummarizing}
+          onImportPDF={handleImportPDF}
+          isImportingPDF={isPDFImporting}
         />
       ) : activeTab === "flashcards" ? (
         <FlashcardsList
@@ -433,6 +489,8 @@ function NotesList({
   onAddNote,
   isGeneratingFlashcards,
   isSummarizing,
+  onImportPDF,
+  isImportingPDF,
 }: {
   notes: Note[];
   onEdit: (n: Note) => void;
@@ -442,95 +500,128 @@ function NotesList({
   onAddNote: () => void;
   isGeneratingFlashcards: boolean;
   isSummarizing: boolean;
+  onImportPDF: () => void;
+  isImportingPDF: boolean;
 }) {
-  if (notes.length === 0) {
-    return (
-      <EmptyState
-        emoji="📝"
-        title="No notes yet"
-        description="Add your first note to start studying. You can also upload a PDF!"
-        actionLabel="Add Note"
-        onAction={onAddNote}
-      />
-    );
-  }
-
   return (
     <View style={{ flex: 1 }}>
-      <FlatList
-        data={notes}
-        keyExtractor={(n) => n.id}
-        contentContainerStyle={styles.notesList}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        renderItem={({ item }) => (
-          <View style={styles.noteCard}>
-            <TouchableOpacity
-              onPress={() => onEdit(item)}
-              style={styles.noteContent}
-            >
-              <Text style={styles.noteTitle} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.notePreview} numberOfLines={3}>
-                {item.content}
-              </Text>
-              {item.ai_summary && (
-                <View style={styles.summaryContainer}>
-                  <Text style={styles.summaryLabel}>✨ AI Summary</Text>
-                  <Text style={styles.summaryText} numberOfLines={3}>
-                    {item.ai_summary}
-                  </Text>
-                </View>
-              )}
-              <Text style={styles.noteMeta}>
-                {item.word_count} words
-              </Text>
-            </TouchableOpacity>
-
-            {/* AI Actions */}
-            <View style={styles.noteActions}>
-              <TouchableOpacity
-                style={styles.noteAction}
-                onPress={() => onGenerateFlashcards(item)}
-                disabled={isGeneratingFlashcards}
-              >
-                <Ionicons name="flash" size={14} color={Colors.gold[500]} />
-                <Text style={[styles.noteActionText, { color: Colors.gold[500] }]}>
-                  {isGeneratingFlashcards ? "Generating..." : "Make Cards"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.noteAction}
-                onPress={() => onSummarize(item)}
-                disabled={isSummarizing}
-              >
-                <Ionicons name="sparkles" size={14} color={Colors.brand[400]} />
-                <Text style={[styles.noteActionText, { color: Colors.brand[400] }]}>
-                  {isSummarizing ? "Summarizing..." : "Summarize"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.noteAction}
-                onPress={() => onDelete(item)}
-              >
-                <Ionicons name="trash-outline" size={14} color={Colors.error} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
-
-      <TouchableOpacity style={styles.fab} onPress={onAddNote}>
-        <LinearGradient
-          colors={Colors.gradients.brand}
-          style={styles.fabGradient}
+      {/* Quick action bar — always visible */}
+      <View style={styles.noteActionsBar}>
+        <TouchableOpacity style={styles.noteActionBarBtn} onPress={onAddNote}>
+          <Ionicons name="create-outline" size={15} color={Colors.text.primary} />
+          <Text style={styles.noteActionBarText}>New Note</Text>
+        </TouchableOpacity>
+        <View style={styles.noteActionBarDivider} />
+        <TouchableOpacity
+          style={styles.noteActionBarBtn}
+          onPress={onImportPDF}
+          disabled={isImportingPDF}
         >
-          <Ionicons name="add" size={28} color={Colors.white} />
-        </LinearGradient>
-      </TouchableOpacity>
+          <Ionicons
+            name="document-attach-outline"
+            size={15}
+            color={Colors.gold[400]}
+          />
+          <Text style={[styles.noteActionBarText, { color: Colors.gold[400] }]}>
+            {isImportingPDF ? "Importing..." : "Import PDF"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {notes.length === 0 ? (
+        <EmptyState
+          emoji="📝"
+          title="No notes yet"
+          description="Write a note or import a PDF to get started"
+        />
+      ) : (
+        <>
+          <FlatList
+            data={notes}
+            keyExtractor={(n) => n.id}
+            contentContainerStyle={styles.notesList}
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+            renderItem={({ item }) => (
+              <View style={styles.noteCard}>
+                <TouchableOpacity
+                  onPress={() => onEdit(item)}
+                  style={styles.noteContent}
+                >
+                  <Text style={styles.noteTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.notePreview} numberOfLines={3}>
+                    {item.content}
+                  </Text>
+                  {item.ai_summary && (
+                    <View style={styles.summaryContainer}>
+                      <Text style={styles.summaryLabel}>✨ AI Summary</Text>
+                      <Text style={styles.summaryText} numberOfLines={3}>
+                        {item.ai_summary}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.noteMeta}>
+                    <Text style={styles.noteMetaText}>{item.word_count} words</Text>
+                    {item.source_type === "pdf" && (
+                      <View style={styles.pdfBadge}>
+                        <Ionicons
+                          name="document-attach"
+                          size={10}
+                          color={Colors.gold[500]}
+                        />
+                        <Text style={styles.pdfBadgeText}>PDF</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                {/* AI Actions */}
+                <View style={styles.noteActions}>
+                  <TouchableOpacity
+                    style={styles.noteAction}
+                    onPress={() => onGenerateFlashcards(item)}
+                    disabled={isGeneratingFlashcards}
+                  >
+                    <Ionicons name="flash" size={14} color={Colors.gold[500]} />
+                    <Text style={[styles.noteActionText, { color: Colors.gold[500] }]}>
+                      {isGeneratingFlashcards ? "Generating..." : "Make Cards"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.noteAction}
+                    onPress={() => onSummarize(item)}
+                    disabled={isSummarizing}
+                  >
+                    <Ionicons name="sparkles" size={14} color={Colors.brand[400]} />
+                    <Text style={[styles.noteActionText, { color: Colors.brand[400] }]}>
+                      {isSummarizing ? "Summarizing..." : "Summarize"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.noteAction}
+                    onPress={() => onDelete(item)}
+                  >
+                    <Ionicons name="trash-outline" size={14} color={Colors.error} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+
+          <TouchableOpacity style={styles.fab} onPress={onAddNote}>
+            <LinearGradient
+              colors={Colors.gradients.brand}
+              style={styles.fabGradient}
+            >
+              <Ionicons name="add" size={28} color={Colors.white} />
+            </LinearGradient>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -855,9 +946,57 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   noteMeta: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    marginTop: 4,
+  },
+  noteMetaText: {
     fontSize: 11,
     color: Colors.text.tertiary,
-    marginTop: 4,
+  },
+  pdfBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 3,
+    backgroundColor: "rgba(245, 158, 11, 0.1)",
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  pdfBadgeText: {
+    fontSize: 9,
+    fontWeight: "700" as const,
+    color: Colors.gold[500],
+    letterSpacing: 0.5,
+  },
+  noteActionsBar: {
+    flexDirection: "row" as const,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: Colors.surface.primary,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    overflow: "hidden" as const,
+  },
+  noteActionBarBtn: {
+    flex: 1,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    paddingVertical: 12,
+  },
+  noteActionBarDivider: {
+    width: 1,
+    backgroundColor: Colors.border.primary,
+  },
+  noteActionBarText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.text.primary,
   },
   noteActions: {
     flexDirection: "row",
