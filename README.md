@@ -1,6 +1,18 @@
 # Luminary
 
-A study app I built as a portfolio project. The idea came from bouncing between NotebookLM, Quizlet, and Knowt depending on what I needed — I wanted one app that did all of it. You can drop in notes or a PDF, get flashcards generated automatically, quiz yourself, and ask the AI questions about your own material. It runs on iOS and Android from one codebase.
+A study app I built as a portfolio project. The idea came from bouncing between NotebookLM, Quizlet, and Knowt depending on what I needed — I wanted one app that did all of it. You can drop in notes or a PDF, get flashcards generated automatically, quiz yourself, and ask the AI questions about your own material.
+
+Runs in the browser as a PWA (installable on iOS and Android from Safari/Chrome) and natively on iOS and Android from one codebase.
+
+---
+
+<p align="center">
+  <img src="docs/screenshots/welcome.png" width="220" alt="Welcome screen" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/login.png" width="220" alt="Sign in screen" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/register.png" width="220" alt="Create account screen" />
+</p>
 
 ---
 
@@ -36,9 +48,10 @@ Streaks, accuracy per session, total cards studied, weekly activity view, and a 
 | Backend | Supabase (auth, Postgres, RLS) |
 | AI | Anthropic Claude Sonnet 4.6 |
 | State | Zustand v5 |
-| Animations | React Native Reanimated 3 |
+| Animations | React Native Reanimated 4 |
 | Gestures | React Native Gesture Handler |
 | Styling | NativeWind v4 + custom StyleSheet |
+| Web | React Native Web + PWA manifest |
 
 ---
 
@@ -67,8 +80,14 @@ supabase/schema.sql
 Then enable Email Auth under **Authentication → Providers** in Supabase.
 
 ```bash
+npm run web        # browser
 npm run ios        # or npm run android
 ```
+
+### PWA install
+
+On iOS: open in Safari → Share → Add to Home Screen
+On Android: open in Chrome → menu → Install app
 
 ---
 
@@ -91,6 +110,7 @@ bb-study-app/
 │   ├── claude.ts       # all AI calls (flashcards, chat, summary, quiz, PDF)
 │   ├── supabase.ts     # client + database helpers
 │   └── spaced-repetition.ts  # SM-2 algorithm
+├── public/             # PWA manifest + icons (192px, 512px, apple-touch-icon)
 ├── store/              # Zustand stores (auth, notebooks)
 ├── types/              # TypeScript types + DB schema types
 ├── constants/          # colors, config
@@ -134,6 +154,6 @@ Things I want to add when I have time:
 
 ## Notes
 
-- The placeholder assets in `assets/images/` need to be replaced with real icons before submitting to the App Store
 - The Anthropic API key is called client-side (fine for a portfolio project, move it behind a serverless function before going to production)
 - Match game currently supports up to 6 pairs per round to keep the grid readable on smaller phones
+- The web build disables native screen transition animations since `react-native-screens` uses Reanimated easing APIs that only run on device; navigation still works, it just uses instant transitions on web
