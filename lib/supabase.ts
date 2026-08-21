@@ -12,7 +12,7 @@ const storage = Platform.OS === "web" && typeof window !== "undefined"
   ? undefined  // Supabase defaults to localStorage on web
   : AsyncStorage;
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: storage as any,
     autoRefreshToken: true,
@@ -65,7 +65,7 @@ export const db = {
     get: async (userId: string) =>
       supabase.from("profiles").select("*").eq("id", userId).single(),
 
-    upsert: async (profile: Partial<{ id: string; full_name: string; avatar_url: string }> & { id: string }) =>
+    upsert: async (profile: Database["public"]["Tables"]["profiles"]["Insert"]) =>
       supabase.from("profiles").upsert(profile),
 
     updateStreak: async (userId: string, streak: number) =>

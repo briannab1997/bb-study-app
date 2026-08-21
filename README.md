@@ -130,6 +130,12 @@ bb-study-app/
 
 **Spaced repetition** — standard SM-2. Ease factor starts at 2.5 and adjusts based on your rating (Again / Hard / Good / Easy). Cards you struggle with surface more often, cards you know well get pushed weeks or months out.
 
+## AI evaluation approach
+
+Because the app depends on AI-generated study material, I also wrote a lightweight evaluation plan for checking answer quality, grounding, JSON structure, and regression scenarios. The goal is to make sure generated flashcards, summaries, tutor responses, PDF imports, and quiz questions stay useful instead of just looking impressive.
+
+See [`docs/ai-evaluation-plan.md`](docs/ai-evaluation-plan.md).
+
 ---
 
 ## Database

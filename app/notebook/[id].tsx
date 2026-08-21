@@ -12,7 +12,7 @@ import {
   FlatList,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -694,7 +694,7 @@ function ChatTab({
   onInputChange: (t: string) => void;
   onSend: () => void;
   isLoading: boolean;
-  scrollRef: React.RefObject<ScrollView>;
+  scrollRef: React.RefObject<ScrollView | null>;
   hasNotes: boolean;
 }) {
   return (

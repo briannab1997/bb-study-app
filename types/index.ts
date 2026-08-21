@@ -136,42 +136,54 @@ export interface Database {
         Row: UserProfile;
         Insert: Partial<UserProfile> & { id: string };
         Update: Partial<UserProfile>;
+        Relationships: [];
       };
       notebooks: {
         Row: Notebook;
         Insert: Omit<Notebook, "id" | "created_at" | "updated_at">;
         Update: Partial<Omit<Notebook, "id" | "user_id">>;
+        Relationships: [];
       };
       notes: {
         Row: Note;
         Insert: Omit<Note, "id" | "created_at" | "updated_at">;
         Update: Partial<Omit<Note, "id" | "notebook_id">>;
+        Relationships: [];
       };
       flashcard_sets: {
         Row: FlashcardSet;
         Insert: Omit<FlashcardSet, "id" | "created_at" | "updated_at">;
         Update: Partial<Omit<FlashcardSet, "id" | "notebook_id">>;
+        Relationships: [];
       };
       flashcards: {
         Row: Flashcard;
         Insert: Omit<Flashcard, "id" | "created_at">;
         Update: Partial<Omit<Flashcard, "id" | "set_id">>;
+        Relationships: [];
       };
       study_progress: {
         Row: StudyProgress;
         Insert: Omit<StudyProgress, "id">;
         Update: Partial<StudyProgress>;
+        Relationships: [];
       };
       chat_messages: {
         Row: ChatMessage;
         Insert: Omit<ChatMessage, "id" | "created_at">;
         Update: Partial<ChatMessage>;
+        Relationships: [];
       };
       study_sessions: {
         Row: StudySession;
         Insert: Omit<StudySession, "id">;
         Update: Partial<StudySession>;
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }

@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
       <View style={styles.container}>
         <Text style={styles.emoji}>🌌</Text>
         <Text style={styles.title}>Page Not Found</Text>
-        <Text style={styles.subtitle}>This screen doesn't exist.</Text>
+        <Text style={styles.subtitle}>{"This screen doesn't exist."}</Text>
         <Link href="/" style={styles.link}>
           <Text style={styles.linkText}>Go to home screen</Text>
         </Link>

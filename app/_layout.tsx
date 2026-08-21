@@ -4,11 +4,20 @@ import Head from "expo-router/head";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import type { NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import "../global.css";
 
 // Animations are native-only — react-native-screens uses Reanimated 4 easing on web
-const anim = (type: string) =>
+const anim = (
+  type: NonNullable<NativeStackNavigationOptions["animation"]>
+): NativeStackNavigationOptions =>
   Platform.OS === "web" ? {} : { animation: type };
+
+const modal = (
+  animation: NonNullable<NativeStackNavigationOptions["animation"]>,
+  presentation: NonNullable<NativeStackNavigationOptions["presentation"]>
+): NativeStackNavigationOptions =>
+  Platform.OS === "web" ? {} : { animation, presentation };
 
 export default function RootLayout() {
   return (
@@ -45,7 +54,7 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="notebook/new"
-            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "modal" }}
+            options={modal("slide_from_bottom", "modal")}
           />
           <Stack.Screen
             name="flashcards/[setId]"
@@ -53,15 +62,15 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="flashcards/study/[setId]"
-            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={modal("slide_from_bottom", "fullScreenModal")}
           />
           <Stack.Screen
             name="quiz/[setId]"
-            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={modal("slide_from_bottom", "fullScreenModal")}
           />
           <Stack.Screen
             name="flashcards/match/[setId]"
-            options={Platform.OS === "web" ? {} : { animation: "slide_from_bottom", presentation: "fullScreenModal" }}
+            options={modal("slide_from_bottom", "fullScreenModal")}
           />
         </Stack>
       </SafeAreaProvider>

@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await db.profiles.upsert({
           id: data.user.id,
           full_name: fullName,
-          avatar_url: null,
+          avatar_url: undefined,
         });
         await get().refreshProfile();
       }

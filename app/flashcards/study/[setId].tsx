@@ -267,7 +267,7 @@ export default function StudySessionScreen() {
         <View style={styles.swipeHints}>
           <View style={styles.swipeHint}>
             <Ionicons name="close-circle" size={18} color={Colors.error} />
-            <Text style={styles.swipeHintText}>Didn't know</Text>
+            <Text style={styles.swipeHintText}>{"Didn't know"}</Text>
           </View>
           <Text style={styles.swipeHintDivider}>Swipe or tap</Text>
           <View style={styles.swipeHint}>
