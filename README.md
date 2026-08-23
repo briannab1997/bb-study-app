@@ -136,6 +136,14 @@ Because the app depends on AI-generated study material, I also wrote a lightweig
 
 See [`docs/ai-evaluation-plan.md`](docs/ai-evaluation-plan.md).
 
+I also added lightweight agent-style instruction files for the core study workflows. These are not tied to a specific agent framework yet, but they define the inputs, outputs, constraints, and quality checks I would want an AI workflow to follow inside the app.
+
+- [`ai-skills/flashcard-generator.md`](ai-skills/flashcard-generator.md)
+- [`ai-skills/tutor-chat.md`](ai-skills/tutor-chat.md)
+- [`ai-skills/quiz-builder.md`](ai-skills/quiz-builder.md)
+- [`ai-skills/eval-reviewer.md`](ai-skills/eval-reviewer.md)
+- [`evals/luminary-eval-scenarios.md`](evals/luminary-eval-scenarios.md)
+
 ---
 
 ## Database
